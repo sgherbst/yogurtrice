@@ -31,9 +31,16 @@ void setup() {
 
 void loop(void) {
   float inoculateDurationHr;
+  float temp_f;
+
+  temp_f = get_temp_f();
+  Serial.print("Temperature: ");
+  Serial.print(temp_f);
+  Serial.print(" (degF), State=");
   
   if (State==SCALD){
-    if (get_temp_f() < SCALD_TEMP_F){
+    Serial.println("SCALD");
+    if (temp_f < SCALD_TEMP_F){
       enable_heater();
       State=SCALD;
     } else {
@@ -41,7 +48,8 @@ void loop(void) {
       State=COOL;
     }
   } else if (State==COOL) {
-    if (get_temp_f() >= INOCULATE_TEMP_F){
+    Serial.println("COOL");
+    if (temp_f >= INOCULATE_TEMP_F){
       disable_heater();
       State=COOL;
     } else {
@@ -51,8 +59,11 @@ void loop(void) {
     }
   } else if (INOCULATE) {
     inoculateDurationHr = ((float)(millis()-inoculateStart))/3600000.0;
+    Serial.print("INOCULATE, Duration=");
+    Serial.print(inoculateDurationHr);
+    Serial.println(" (hr)");
     if (inoculateDurationHr < INOCULATE_TIME_HR){
-      if (get_temp_f() >= INOCULATE_TEMP_F){
+      if (temp_f >= INOCULATE_TEMP_F){
         disable_heater();
         State=INOCULATE;
       } else {
@@ -64,9 +75,9 @@ void loop(void) {
       State=DONE;      
     }
   } else {
+    Serial.println("DONE");
     disable_heater();
     State=DONE;
-    delay(1000);
   }
 }
 
@@ -102,6 +113,8 @@ float get_temp_c(){
     Serial.println("No more addresses.");
     ds.reset_search();
     return ERROR_TEMP_C;
+  } else {
+    ds.reset_search();
   }
   
   if (OneWire::crc8(addr, 7) != addr[7]) {
