@@ -1,83 +1,32 @@
 #include <OneWire.h>
 
-#define ONE_WIRE_PIN 10
-#define RELAY_PIN 13
-
-#define BAUD_RATE 9600
-
-#define SCALD       0
-#define COOL        1
-#define INOCULATE   2
-#define DONE        3
-
-#define SCALD_TEMP_F          180.0
-#define INOCULATE_TEMP_F      110.0
-#define INOCULATE_TIME_HR     12.0  
-
-#define ERROR_TEMP_C          10000.0  // defined large enough to ensure the heater will be disabled in case of an error
+#define ONE_WIRE_PIN      10
+#define RELAY_PIN         13
+#define BAUD_RATE         9600
+#define INOCULATE_TEMP_F  110.0
+#define ERROR_TEMP_C      10000.0  // defined large enough to ensure the heater will be disabled in case of an error
 
 OneWire  ds(ONE_WIRE_PIN);
-
-int State;
-unsigned long inoculateStart;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
   pinMode(RELAY_PIN, OUTPUT);
   Serial.begin(BAUD_RATE);
-
-  State=SCALD;
 }
 
 void loop(void) {
-  float inoculateDurationHr;
   float temp_f;
-
+  
   temp_f = get_temp_f();
   Serial.print("Temperature: ");
   Serial.print(temp_f);
-  Serial.print(" (degF), State=");
-  
-  if (State==SCALD){
-    Serial.println("SCALD");
-    if (temp_f < SCALD_TEMP_F){
-      enable_heater();
-      State=SCALD;
-    } else {
-      disable_heater();
-      State=COOL;
-    }
-  } else if (State==COOL) {
-    Serial.println("COOL");
-    if (temp_f >= INOCULATE_TEMP_F){
-      disable_heater();
-      State=COOL;
-    } else {
-      enable_heater();
-      inoculateStart = millis(); 
-      State=INOCULATE;
-    }
-  } else if (INOCULATE) {
-    inoculateDurationHr = ((float)(millis()-inoculateStart))/3600000.0;
-    Serial.print("INOCULATE, Duration=");
-    Serial.print(inoculateDurationHr);
-    Serial.println(" (hr)");
-    if (inoculateDurationHr < INOCULATE_TIME_HR){
-      if (temp_f >= INOCULATE_TEMP_F){
-        disable_heater();
-        State=INOCULATE;
-      } else {
-        enable_heater();
-        State=INOCULATE;
-      }
-    } else {
-      disable_heater();
-      State=DONE;      
-    }
-  } else {
-    Serial.println("DONE");
+
+  if (temp_f >= INOCULATE_TEMP_F){
     disable_heater();
-    State=DONE;
+    Serial.println(", heater disabled.");
+  } else {
+    enable_heater();
+    Serial.println(", heater enabled.");
   }
 }
 
